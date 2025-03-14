@@ -1,34 +1,176 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
-
+/// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
 contract SimpleWallet {
-    // Address of the owner (the deployer of the contract)
+
+
+    struct Transaction{
+      address from;
+      address to;
+      uint timestamp;
+      uint amount;
+    }
+   
+    Transaction[] public transactionHistory; //dynamic Array
+
+
     address public owner;
-
-    // Constructor to set the deployer as the owner
-    constructor() {
-        owner = msg.sender;
+    bool public stop;
+    event Transfer(address receiver,uint amount);
+    event Receive(address sender,uint amonut);
+    event ReceiveUser(address sender, address receiver,uint amount);
+   
+    constructor(){
+        owner=msg.sender;
     }
-
-    // Modifier to allow only the owner to perform certain actions
+ 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can perform this action");
-        _; 
+        require(msg.sender == owner,"You don't have access");
+        _;
+    }
+    modifier getSuspiciousUser(address _sender) {
+      require(suspiciousUser[_sender]<5, "Activity found suspicious, Try later");
+      _;
     }
 
-    // Function to deposit Ether into the contract
-    function deposit() public payable {
-        
+
+   
+    mapping(address => uint) public suspiciousUser; 
+
+
+    modifier isEmergencyDeclared() {
+      require(stop==false,"Emergency declared");
+      _;
+    }
+   
+    function toggleStop() external onlyOwner {
+      stop=!stop;
     }
 
-    // Function to withdraw Ether from the contract (only owner can withdraw)
-    function withdraw(uint _amount) public onlyOwner {
-        require(address(this).balance >= _amount, "Insufficient balance in the wallet");
-        payable(msg.sender).transfer(_amount);
+
+    function changOwner(address newOwner) public onlyOwner isEmergencyDeclared {
+       owner=newOwner;
     }
 
-    // Function to check the balance of the contract
-    function getBalance() public view returns (uint) {
-        return address(this).balance;
+
+    /**Contract related functions**/
+    // Any user send Ether to the contract
+    function transferToContract(uint _startTime) external payable getSuspiciousUser(msg.sender) {
+      require(block.timestamp>_startTime,"send after start time");
+       transactionHistory.push(Transaction({
+         from:msg.sender,
+         to:address(this),
+         timestamp:block.timestamp,
+         amount:msg.value
+       }));
     }
+
+
+
+    // Owner can send Ether From the Contract Balance 
+    function transferToUserViaContract(address payable _to, uint _weiAmount) external onlyOwner {
+        require(address(this).balance>=_weiAmount,"Insufficient Balance");
+        require(_to!=address(0),"Adress format incorrect");
+        _to.transfer(_weiAmount);
+         transactionHistory.push(Transaction({
+         from:msg.sender,
+         to:_to,
+         timestamp:block.timestamp,
+         amount:_weiAmount
+       }));
+        emit Transfer(_to,_weiAmount);
+    }
+
+
+
+    // Only Owner can withdraw from the Contract Balance
+    function withdrawFromContract(uint _weiAmount) external onlyOwner {
+       require(address(this).balance >= _weiAmount, "Insuffficient balance");
+       payable(owner).transfer(_weiAmount);
+       transactionHistory.push(Transaction({
+         from:address(this),
+         to:owner,
+         timestamp:block.timestamp,
+         amount:_weiAmount
+       }));
+    }
+
+
+
+
+    function getContractBalanceInWei() external view returns (uint) {
+         return address(this).balance;
+    }
+   
+     /**User related functions**/
+     // user can send Ether to the Other user
+    function transferToUserViaMsgValue(address _to) external payable {
+       require(address(this).balance>=msg.value,"Insufficient Balance");
+       require(_to!=address(0),"Adress format incorrect");
+       payable (_to).transfer(msg.value);
+       transactionHistory.push(Transaction({
+         from:msg.sender,
+         to:_to,
+         timestamp:block.timestamp,
+         amount:msg.value
+       }));
+    }
+
+
+    //event - sender,receiver, amount
+     // owner can receive ether in their own wallet
+    function receiveFromUser() external payable {
+      require(msg.value>0,"Wei Value must be greater than zero");
+      payable(owner).transfer(msg.value);
+      emit ReceiveUser(msg.sender, owner, msg.value);
+      transactionHistory.push(Transaction({
+         from:msg.sender,
+         to:owner,
+         timestamp:block.timestamp,
+         amount:msg.value
+       }));
+    }
+
+
+    function getOwnerBalanceInWei() external view returns(uint){
+       return owner.balance;
+    }
+
+
+    receive() external payable {
+      transactionHistory.push(Transaction({
+         from:msg.sender,
+         to:address(this),
+         timestamp:block.timestamp,
+         amount:msg.value
+       }));
+       emit Receive(msg.sender, msg.value);
+    }
+
+
+     function suspiciousActivity(address _sender) public {
+      suspiciousUser[_sender] += 1;
+    }
+
+
+    fallback() external {
+      suspiciousActivity(msg.sender);
+    }
+
+
+    function getTransactionHistory() external view returns(Transaction[] memory){
+      return transactionHistory;
+    }
+
+
+    function emergencyWithdrawl() external {
+      require(stop==true,"Emergency not declared");
+      payable(owner).transfer(address(this).balance);
+    }
+
 }
+
+
+
+
+
+
