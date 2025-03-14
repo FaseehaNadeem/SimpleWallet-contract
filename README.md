@@ -1,77 +1,48 @@
-# SimpleWallet-contract
+# Simple Wallet Contract
 
-## Overview
-The **SimpleWallet** smart contract is a basic Ethereum wallet built using Solidity. It allows the contract owner to deposit and withdraw Ether securely. This contract is ideal for learning how to manage funds and permissions in a smart contract.
-
----
+## Introduction
+This is a **Simple Wallet** smart contract written in Solidity. It allows users to store, send, and receive Ether securely. This contract includes various functions to manage funds and track transactions.
 
 ## Features
-1. **Ownership Control**  
-   - Only the deployer of the contract is the owner.  
-   - Specific actions (like withdrawing Ether) are restricted to the owner.
+- **Deposit Ether** into the contract.
+- **Withdraw Ether** from the contract (only for the owner).
+- **Send Ether** to other users.
+- **Track Transaction History** of all deposits and withdrawals.
+- **Security Measures** to prevent suspicious activities.
+- **Emergency Stop Function** to disable transactions in case of an issue.
+- **Fallback & Receive Functions** to handle unexpected Ether transfers.
 
-2. **Deposit Ether**  
-   - Anyone can deposit Ether into the wallet.  
+## How It Works
+### 1. Depositing Ether
+Users can send Ether to the contract using the `receive` function. This automatically records the transaction in history.
 
-3. **Withdraw Ether**  
-   - Only the owner can withdraw Ether from the wallet.  
+### 2. Withdrawing Ether
+Only the contract owner can withdraw Ether from the contract using the `withdrawFromContract` function.
 
-4. **Check Balance**  
-   - Anyone can check the current balance of the contract.
+### 3. Sending Ether to Others
+The owner can send Ether to any address using the `transferToUserViaContract` function.
 
----
+### 4. Checking Balances
+- **Contract Balance:** Anyone can check how much Ether is stored in the contract.
+- **Owner's Balance:** The owner’s wallet balance can also be viewed.
 
-## Functions
+### 5. Emergency Mode
+- The contract owner can **activate emergency mode**, which stops all transactions.
+- If an emergency is declared, the owner can withdraw all funds immediately.
 
-### **1. Constructor**  
-The constructor sets the deployer of the contract (`msg.sender`) as the owner. This ensures that only the owner can access restricted functions.
+### 6. Suspicious Activity Tracking
+- The contract keeps track of suspicious users.
+- If a user attempts too many failed transactions, they are **blocked** temporarily.
 
----
+### 7. Handling Unexpected Ether Transfers
+- The `receive` function ensures Ether sent to the contract is recorded properly.
+- The `fallback` function tracks unauthorized transactions and marks them as suspicious.
 
-### **2. `deposit()`**  
-This function allows anyone to deposit Ether into the contract.  
-
-- **Visibility:** `public payable`  
-- **Details:**  
-   - Use the `payable` keyword to accept Ether.  
-
----
-
-### **3. `withdraw(uint _amount)`**  
-Allows the owner to withdraw a specific amount of Ether from the contract.  
-
-- **Visibility:** `public`  
-- **Restricted:** Yes (only the owner can call this function).  
-- **Conditions:**  
-   - Checks if the contract has enough balance.  
-   - Sends the specified `_amount` to the owner's wallet address.  
-
----
-
-### **4. `getBalance()`**  
-Returns the current balance of the contract.  
-
-- **Visibility:** `public view`  
-- **Details:**  
-   - The balance is obtained using `address(this).balance`.
-
----
-
-## Usage
-
-1. **Deploy the Contract**  
-   Deploy the `SimpleWallet` contract on an Ethereum-compatible network like Ethereum Testnet, Local Ganache, or any EVM chain.
-
-2. **Deposit Ether**  
-   - Call the `deposit()` function and send Ether to the contract.  
-   - Example: Use the "value" field in Remix IDE to send Ether.
-
-3. **Withdraw Ether**  
-   - Call the `withdraw(_amount)` function.  
-   - Only the owner can perform this action.  
-   - Specify the `_amount` of Ether you want to withdraw.  
-
-4. **Check Balance**  
-   - Call the `getBalance()` function to see how much Ether is stored in the contract.  
+## How to Use
+1. **Deploy the Contract:** The owner deploys the contract and gets control over it.
+2. **Deposit Funds:** Users send Ether to the contract.
+3. **Make Transactions:** The owner can send and withdraw funds as needed.
+4. **Monitor Transactions:** Use the transaction history to track activities.
+5. **Enable Emergency Mode (if needed):** The owner can stop all transactions in case of an issue.
 
 
